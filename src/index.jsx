@@ -1,10 +1,12 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import './index.css'
-import PedidoApp from './PedidoApp'
+cat > src/index.jsx <<'JSX'
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import PedidoAppRG from "./PedidoAppRG";
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <PedidoApp />
+    <PedidoAppRG />
   </React.StrictMode>
-)
+);
+JSX
