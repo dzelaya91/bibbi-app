@@ -3,11 +3,11 @@ import React, { useEffect, useState } from "react";
 import Select from "react-select";
 
 const COMPANY_NAME = "SUPER GALO MALL DEL SOL";
-const LOGO_URL = "/assets/logo.jpg"; // asegúrate de tener public/assets/logo.jpg
+const LOGO_URL = "src=/assets/logo.jpg"
 
-// APPS SCRIPT: URL que me diste
-const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbwMVh1rWsybVDhR3uFXy41lZOJqd13kcgb4-SHWk6d8dhH3-6oQCu46Ban9Gfp-JST6hQ/exec";
+// URL del Apps Script desplegado (reemplaza por tu URL /exec si es distinta)
+const APPS_SCRIPT_ORDERS_URL = "https://script.google.com/macros/s/AKfycbwZ9zFBBNtj-9TnbpmOqV5-eOtDkmu2KUIxP4_cazpmF9G2hrUPlPk0Vn0hM5wvg38n6g/exec";
+const APPS_SCRIPT_URL = APPS_SCRIPT_ORDERS_URL; // para validar token y ping
 
 const CLIENTES_CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vRHnuv04zDvqsj7FjTkegYte9SPKrwV3NPy7GiuxEKdjFuiI5YeHmr6Keb9Uzws76fNaZ476erXukSg/pub?gid=0&single=true&output=csv";
@@ -15,7 +15,6 @@ const CLIENTES_CSV_URL =
 const PRODUCTOS_CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vRHnuv04zDvqsj7FjTkegYte9SPKrwV3NPy7GiuxEKdjFuiI5YeHmr6Keb9Uzws76fNaZ476erXukSg/pub?gid=1713107757&single=true&output=csv";
 
-const TOKENS_VALIDOS = ["1230", "4560", "7890", "1011", "1415", "1617"]; // ya no usado para validación; se puede quitar
 const NOMBRES_VENDEDORES = [
   "Vendedor 1",
   "Vendedor 2",
@@ -25,7 +24,7 @@ const NOMBRES_VENDEDORES = [
 ];
 
 /* -----------------------
-   Utilities
+   Utilities CSV + helpers
    ----------------------- */
 function normalizeHeader(h) {
   if (!h && h !== 0) return "";
@@ -89,7 +88,7 @@ function csvToJson(csv) {
 }
 
 /* -----------------------
-   Token validation helpers (with timeout)
+   Token validation helper
    ----------------------- */
 async function validarTokenWithTimeout(token, timeoutMs = 8000) {
   const controller = new AbortController();
@@ -138,9 +137,7 @@ function PedidoAppRG() {
       localStorage.removeItem("session_valid");
       localStorage.removeItem("session_user");
       localStorage.removeItem("session_expires");
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
     setTokenValido(false);
     setVendedor(null);
     setToken("");
@@ -190,7 +187,7 @@ function PedidoAppRG() {
 
   // opciones clientes
   const opcionesClientes = clientes.map((c) => {
-    const codigo = getField(c, ["Codigo Cliente", "CODIGO_CLIENTE", "Codigo", "CODIGO", "Codigo Cliente", "CodigoCliente", "Codigo_cliente"]) ?? "";
+    const codigo = getField(c, ["Codigo Cliente", "CODIGO_CLIENTE", "Codigo", "CODIGO", "CodigoCliente", "Codigo_cliente"]) ?? "";
     const nombre = getField(c, ["Cliente", "CLIENTE", "NOMBRE", "NOMBRE NEGOCIO", "Nombre negocio"]) ?? "Sin Nombre";
     return { value: codigo, label: `${nombre} - ${codigo}` };
   });
@@ -289,7 +286,7 @@ function PedidoAppRG() {
     return pedidoItems.reduce((total, item) => total + (Number(item.precio) || 0) * (Number(item.cantidad) || 0), 0);
   };
 
-  const enviarPedido = () => {
+  const enviarPedido = async () => {
     if (!clienteSeleccionado || pedidoItems.length === 0 || !vendedor) {
       alert("Completa cliente, productos y vendedor primero");
       return;
@@ -313,39 +310,57 @@ function PedidoAppRG() {
       total: calcularTotal().toFixed(2)
     };
 
-    const params = new URLSearchParams({
-      cliente: pedido.cliente,
-      vendedor: pedido.vendedor,
-      comentarios: pedido.comentarios,
-      municipio: pedido.municipio || "",
-      departamento: pedido.departamento || "",
-      distrito: pedido.distrito || "",
-      items: JSON.stringify(pedido.items),
-      total: pedido.total
-    });
+    // Enviar una fila por item (saveOrderRow)
+    const results = [];
+    for (let i = 0; i < pedido.items.length; i++) {
+      const it = pedido.items[i];
+      const params = new URLSearchParams({
+        action: "saveOrderRow",
+        cliente: pedido.cliente,
+        cod_producto: it.codigo,
+        producto: it.producto,
+        cantidad: String(it.cantidad),
+        lista: String(it.lista || "1"),
+        precio_01: it.lista === "1" ? String(Number(it.precioUnitario || 0).toFixed(2)) : "",
+        precio_02: it.lista === "2" ? String(Number(it.precioUnitario || 0).toFixed(2)) : "",
+        precio_03: it.lista === "3" ? String(Number(it.precioUnitario || 0).toFixed(2)) : "",
+        total_item: it.total,
+        total_pedi: pedido.total,
+        vendedor: pedido.vendedor,
+        comentario: pedido.comentarios,
+        municipio: pedido.municipio,
+        departamento: pedido.departamento,
+        distrito: pedido.distrito
+      });
 
-    fetch(`${APPS_SCRIPT_URL}?${params.toString()}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.status === "success" || (data && Object.keys(data).length === 0)) {
-          setMensajeExito("✅ Pedido enviado correctamente");
-          setTimeout(() => {
-            setMensajeExito("");
-            setClienteSeleccionado(null);
-            setProductoSeleccionado(null);
-            setCantidadSeleccionada("");
-            setListaSeleccionada("1");
-            setPedidoItems([]);
-            setComentarios("");
-            setMunicipio("");
-            setDepartamento("");
-            setDistrito("");
-          }, 2000);
-        } else {
-          alert("❌ Error al enviar pedido: " + (data.message ?? JSON.stringify(data)));
-        }
-      })
-      .catch((err) => alert("❌ Error al enviar: " + err.message));
+      try {
+        const res = await fetch(`${APPS_SCRIPT_ORDERS_URL}?${params.toString()}`, { method: "GET" });
+        const data = await res.json().catch(() => null);
+        results.push({ ok: res.ok, status: res.status, data });
+      } catch (err) {
+        results.push({ ok: false, error: String(err) });
+      }
+    }
+
+    const failed = results.filter((r) => !r.ok);
+    if (failed.length === 0) {
+      setMensajeExito("✅ Pedido enviado correctamente");
+      setTimeout(() => {
+        setMensajeExito("");
+        setClienteSeleccionado(null);
+        setProductoSeleccionado(null);
+        setCantidadSeleccionada("");
+        setListaSeleccionada("1");
+        setPedidoItems([]);
+        setComentarios("");
+        setMunicipio("");
+        setDepartamento("");
+        setDistrito("");
+      }, 2000);
+    } else {
+      console.error("Errores en envío:", failed);
+      alert(`❌ Fallaron ${failed.length} items al enviar. Revisa consola.`);
+    }
   };
 
   // Render screens
@@ -401,9 +416,9 @@ function PedidoAppRG() {
           </button>
         </div>
 
-        {/* footer */}
+        {/* footer */} 
         <div className="text-center text-xs text-gray-500 mt-4">
-          Desarrollado por DZ - 2025
+          Desarrollado por SmartData 5.0® - 2025
         </div>
       </div>
     );
@@ -426,7 +441,7 @@ function PedidoAppRG() {
 
         {/* footer */}
         <div className="text-center text-xs text-gray-500 mt-4">
-          Desarrollado por DZ - 2025
+          Desarrollado por SmartData 5.0® - 2025
         </div>
       </div>
     );
@@ -659,7 +674,7 @@ function PedidoAppRG() {
 
       {/* footer */}
       <div className="text-center text-xs text-gray-500 mt-4">
-        Desarrollado por DZ - 2025
+        Desarrollado por SmartData 5.0® - 2025
       </div>
     </div>
   );
