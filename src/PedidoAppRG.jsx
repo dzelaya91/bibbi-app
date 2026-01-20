@@ -213,18 +213,30 @@ function LogoDisplay({ url, nombre, empresaId, maxWidth = 110, className = "" })
 
 // ============ VALIDACIÓN TOKEN ============
 
-async function validarTokenWithTimeout(token, timeoutMs = 8000) {
-  const controller = new AbortController();
-  const signal = controller.signal;
-  const url = `${APPS_SCRIPT_URL}?action=validateToken&token=${encodeURIComponent(token)}`;
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { signal });
-    clearTimeout(timeoutId);
-    return await res.json();
-  } catch (err) {
-    clearTimeout(timeoutId);
-    throw err;
+async function validarTokenWithTimeout(token, timeoutMs = 15000, maxRetries = 3) {
+  for (let intento = 1; intento <= maxRetries; intento++) {
+    const controller = new AbortController();
+    const signal = controller.signal;
+    const url = `${APPS_SCRIPT_URL}?action=validateToken&token=${encodeURIComponent(token)}`;
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    
+    try {
+      const res = await fetch(url, { signal });
+      clearTimeout(timeoutId);
+      const data = await res.json();
+      return data;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      console.warn(`Intento ${intento}/${maxRetries} falló:`, err.message);
+      
+      // Si es el último intento, lanzar error
+      if (intento === maxRetries) {
+        throw new Error("No se pudo conectar. Verifica tu conexión e intenta de nuevo.");
+      }
+      
+      // Esperar antes de reintentar (1s, 2s, 3s...)
+      await new Promise(resolve => setTimeout(resolve, intento * 1000));
+    }
   }
 }
 
@@ -539,12 +551,8 @@ function PedidoAppRG() {
         alert("❌ " + (data.message || "Token inválido"));
       }
     } catch (err) {
-      if (err.name === "AbortError") {
-        alert("⏱️ Tiempo de espera agotado. Intenta de nuevo.");
-      } else {
-        console.error("Error validando token:", err);
-        alert("❌ Error de conexión: " + (err.message || String(err)));
-      }
+      console.error("Error validando token:", err);
+      alert("❌ " + (err.message || "Error de conexión. Verifica tu internet e intenta de nuevo."));
     } finally {
       setValidandoToken(false);
     }
@@ -959,36 +967,36 @@ function PedidoAppRG() {
         </div>
       )}
 
-      <div className="p-6 rounded-2xl shadow-lg w-full max-w-2xl border-2" style={{ backgroundColor: '#ffffff', borderColor: '#D4A017' }}>
-        {/* Header */}
-        <div className="flex justify-between items-center mb-4 pb-3 border-b" style={{ borderColor: '#e2e8f0' }}>
-          <div>
-            <h2 className="text-2xl font-bold uppercase" style={{ color: '#1e293b' }}>TOMA PEDIDOS</h2>
-            <p className="text-sm font-semibold" style={{ color: '#000000' }}>{empresa?.nombre || ""}</p>
-            <p className="text-xs mt-1" style={{ color: '#000000' }}>
-              Vendedor: <strong style={{ color: '#1e293b' }}>{vendedor}</strong>
+      <div className="p-4 rounded-xl shadow-lg w-full max-w-2xl border-2" style={{ backgroundColor: '#ffffff', borderColor: '#D4A017' }}>
+        {/* Header - más compacto */}
+        <div className="flex justify-between items-start mb-3 pb-2 border-b" style={{ borderColor: '#e2e8f0' }}>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-bold uppercase" style={{ color: '#1e293b' }}>PEDIDOS</h2>
+            <p className="text-sm font-semibold truncate" style={{ color: '#000000' }}>{empresa?.nombre || ""}</p>
+            <p className="text-xs" style={{ color: '#000000' }}>
+              Vendedor: <strong>{vendedor}</strong>
             </p>
           </div>
-          <div className="flex flex-col items-end">
+          <div className="flex flex-col items-end ml-2">
             <button
               onClick={cerrarSesion}
-              className="text-xs font-semibold underline hover:opacity-70 mb-2"
+              className="text-xs font-bold underline mb-1"
               style={{ color: '#dc2626' }}
             >
-              Cerrar sesión
+              Salir
             </button>
             <LogoDisplay 
               url={logoEmpresaUrl} 
               nombre={empresa?.nombre || ""} 
               empresaId={empresa?.empresa_id}
-              maxWidth={110}
+              maxWidth={80}
             />
           </div>
         </div>
 
         {/* Selección de Cliente */}
-        <div className="mb-4">
-          <label className="block mb-2 font-bold text-sm" style={{ color: '#1e293b' }}>Seleccionar Cliente:</label>
+        <div className="mb-3">
+          <label className="block mb-1 font-bold text-sm">Cliente:</label>
           {clientes.length === 0 ? (
             <div className="text-xs text-red-500">No se encontraron clientes. Verifica la configuración.</div>
           ) : (
@@ -1030,13 +1038,18 @@ function PedidoAppRG() {
               }}
               placeholder="Buscar cliente..."
               isClearable
+              styles={{
+                control: (base) => ({ ...base, fontSize: '16px', minHeight: '44px' }),
+                input: (base) => ({ ...base, fontSize: '16px' }),
+                option: (base) => ({ ...base, fontSize: '14px', padding: '10px 12px' })
+              }}
             />
           )}
 
           {/* Selector de sucursales (si hay más de una) */}
           {sucursalesDisponibles.length > 1 && (
-            <div className="mt-3">
-              <label className="block mb-1 font-medium text-sm">Seleccionar Sucursal:</label>
+            <div className="mt-2">
+              <label className="block mb-1 font-bold text-sm">Sucursal:</label>
               <Select
                 options={sucursalesDisponibles}
                 value={sucursalesDisponibles.find(s => s.value === sucursalSeleccionada)}
@@ -1047,33 +1060,36 @@ function PedidoAppRG() {
                   }
                 }}
                 placeholder="Elige sucursal..."
+                styles={{
+                  control: (base) => ({ ...base, fontSize: '16px', minHeight: '44px' }),
+                  input: (base) => ({ ...base, fontSize: '16px' }),
+                  option: (base) => ({ ...base, fontSize: '14px', padding: '10px 12px' })
+                }}
               />
             </div>
           )}
 
           {/* Info del cliente seleccionado */}
           {clienteSeleccionado && (
-            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="text-sm font-semibold text-blue-900 mb-2">
-                💳 Condición de pago: <span className="text-blue-700">{condicionPago || "No especificada"}</span>
+            <div className="mt-2 p-2 rounded border text-xs" style={{ backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }}>
+              <div className="font-bold mb-1" style={{ color: '#1e40af' }}>
+                💳 Condición de pago: {condicionPago || "Contado"}
               </div>
-              <div className="text-xs text-black pt-2 border-t border-blue-200">
-                <div className="grid grid-cols-2 gap-2">
-                  {nombreNegocio && <div><strong>Negocio:</strong> {nombreNegocio}</div>}
-                  {sucursalSeleccionada && <div><strong>Sucursal:</strong> {sucursalSeleccionada}</div>}
-                  {telefono && <div><strong>Teléfono:</strong> {telefono}</div>}
-                  {municipio && <div><strong>Municipio:</strong> {municipio}</div>}
-                  {departamento && <div><strong>Depto:</strong> {departamento}</div>}
-                  {distrito && <div><strong>Distrito:</strong> {distrito}</div>}
-                </div>
+              <div className="grid grid-cols-2 gap-1" style={{ color: '#000' }}>
+                {nombreNegocio && <div><strong>Negocio:</strong> {nombreNegocio}</div>}
+                {sucursalSeleccionada && <div><strong>Sucursal:</strong> {sucursalSeleccionada}</div>}
+                {telefono && <div><strong>Teléfono:</strong> {telefono}</div>}
+                {municipio && <div><strong>Municipio:</strong> {municipio}</div>}
+                {departamento && <div><strong>Depto:</strong> {departamento}</div>}
+                {distrito && <div><strong>Distrito:</strong> {distrito}</div>}
               </div>
             </div>
           )}
         </div>
 
         {/* Selección de Producto */}
-        <div className="mb-4">
-          <label className="block mb-2 font-bold text-sm" style={{ color: '#1e293b' }}>Seleccionar Producto:</label>
+        <div className="mb-3">
+          <label className="block mb-1 font-bold text-sm">Producto:</label>
           {productos.length === 0 ? (
             <div className="text-xs text-red-500">No se encontraron productos. Verifica la configuración.</div>
           ) : (
@@ -1087,17 +1103,21 @@ function PedidoAppRG() {
                 }}
                 placeholder="Buscar producto..."
                 isClearable
+                styles={{
+                  control: (base) => ({ ...base, fontSize: '16px' }), // Evita zoom en iOS
+                  input: (base) => ({ ...base, fontSize: '16px' })
+                }}
               />
               {productoSeleccionado && (
-                <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
+                <div className="mt-2 p-2 rounded-lg" style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                  <div className="flex gap-3 items-end flex-wrap">
                     <div>
-                      <label className="block text-xs font-semibold mb-1" style={{ color: '#000000' }}>Lista de Precio</label>
+                      <label className="block text-xs font-bold mb-1">Lista</label>
                       <select
                         value={listaSeleccionada}
                         onChange={e => setListaSeleccionada(e.target.value)}
-                        className="w-full px-3 py-2 border rounded-lg text-sm"
-                        style={{ backgroundColor: '#ffffff' }}
+                        className="px-2 py-2 border rounded"
+                        style={{ backgroundColor: '#fff', fontSize: '14px', width: '80px' }}
                       >
                         <option value="1">Lista 1</option>
                         <option value="2">Lista 2</option>
@@ -1105,32 +1125,30 @@ function PedidoAppRG() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold mb-1" style={{ color: '#000000' }}>Cantidad</label>
+                      <label className="block text-xs font-bold mb-1">Precio</label>
+                      <div className="px-3 py-2 rounded font-bold" style={{ backgroundColor: '#ecfccb', color: '#166534', fontSize: '14px' }}>
+                        ${precioUnitarioSeleccionado(productoSeleccionado, listaSeleccionada).toFixed(2)}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-1">Cantidad</label>
                       <input
                         type="number"
                         min="1"
                         value={cantidadSeleccionada}
                         onChange={e => setCantidadSeleccionada(e.target.value)}
-                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                        className="px-2 py-2 border rounded text-center"
                         placeholder="0"
-                        style={{ backgroundColor: '#ffffff' }}
+                        style={{ backgroundColor: '#fff', fontSize: '12px', width: '60px' }}
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold mb-1" style={{ color: '#000000' }}>Precio Unit.</label>
-                      <div className="px-3 py-2 rounded-lg text-sm font-bold" style={{ backgroundColor: '#ecfccb', color: '#166534' }}>
-                        ${precioUnitarioSeleccionado(productoSeleccionado, listaSeleccionada).toFixed(2)}
-                      </div>
-                    </div>
-                    <div>
-                      <button
-                        onClick={agregarProducto}
-                        className="w-full px-4 py-2 text-white rounded-lg font-semibold hover:opacity-90 transition-opacity"
-                        style={{ backgroundColor: '#D4A017' }}
-                      >
-                        + Agregar
-                      </button>
-                    </div>
+                    <button
+                      onClick={agregarProducto}
+                      className="px-4 py-2 text-white rounded font-bold"
+                      style={{ backgroundColor: '#D4A017', fontSize: '14px' }}
+                    >
+                      + Agregar
+                    </button>
                   </div>
                 </div>
               )}
@@ -1140,86 +1158,50 @@ function PedidoAppRG() {
 
         {/* Resumen del Pedido */}
         {pedidoItems.length > 0 ? (
-          <div ref={resumenRef} className="border-2 rounded-lg p-4 text-sm" style={{ backgroundColor: '#fffbeb', borderColor: '#D4A017' }}>
-            <h4 className="font-semibold text-lg mb-3 text-center">
-              Resumen del Pedido ({pedidoItems.length} {pedidoItems.length === 1 ? 'item' : 'items'})
-            </h4>
+          <div ref={resumenRef} className="border-2 rounded-lg p-3" style={{ backgroundColor: '#fffbeb', borderColor: '#D4A017', maxWidth: '450px', margin: '0 auto' }}>
+            <h4 className="font-bold text-base mb-2 text-center">Resumen del Pedido ({pedidoItems.length})</h4>
             
-            <ul className="mb-3 space-y-2">
-              <li className="flex justify-between items-center text-xs font-bold border-b pb-2 mb-2">
-                <div className="w-8"><strong>N°</strong></div>
-                <div className="w-1/2"><strong>Producto</strong></div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-16"><strong>Cant</strong></div>
-                  <div className="w-20"><strong>Unit</strong></div>
-                  <div className="w-16"><strong>Editar</strong></div>
-                  <div className="w-20"><strong>Total</strong></div>
-                  <div className="w-16"><strong>Acción</strong></div>
-                </div>
-              </li>
+            {/* Encabezados */}
+            <div className="flex items-center py-1 border-b text-xs font-bold" style={{ borderColor: '#D4A017', color: '#666' }}>
+              <span className="flex-1">Producto</span>
+              <span className="text-center" style={{ width: '45px' }}>Cant.</span>
+              <span className="text-right" style={{ width: '55px' }}>Total</span>
+              <span className="text-right" style={{ width: '40px' }}></span>
+            </div>
+            
+            <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
               {pedidoItems.map((item, index) => (
-                <li key={index} className="flex justify-between items-center text-xs">
-                  <div className="w-8 text-center font-semibold">{index + 1}</div>
-                  <div className="w-1/2">{item.label.split(" | ")[0]}</div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-16 text-right">{item.cantidad}</div>
-                    <div className="w-20 text-right">${Number(item.precio).toFixed(2)}</div>
-                    <input
-                      type="number"
-                      min="1"
-                      value={item.cantidad}
-                      onChange={e => actualizarCantidad(index, e.target.value)}
-                      className="w-16 px-1 border rounded text-center"
-                    />
-                    <div className="w-20 text-right font-semibold">
-                      ${(Number(item.precio) * Number(item.cantidad)).toFixed(2)}
-                    </div>
-                    <button
-                      onClick={() => eliminarProducto(index)}
-                      className="w-16 text-red-600 hover:underline text-xs"
-                    >
-                      Borrar
-                    </button>
+                <div key={index} className="flex items-center py-2 border-b" style={{ borderColor: '#e5e7eb' }}>
+                  <div className="flex-1 pr-1" style={{ minWidth: 0 }}>
+                    <div className="font-medium truncate" style={{ fontSize: '12px' }}>{item.label.split(" | ")[0]}</div>
+                    <div style={{ fontSize: '11px', color: '#666' }}>${Number(item.precio).toFixed(2)} c/u</div>
                   </div>
-                </li>
+                  <input
+                    type="number"
+                    min="1"
+                    value={item.cantidad}
+                    onChange={e => actualizarCantidad(index, parseInt(e.target.value) || 0)}
+                    className="border rounded text-center"
+                    style={{ width: '45px', padding: '2px', fontSize: '13px' }}
+                  />
+                  <span className="font-bold text-right" style={{ width: '55px', fontSize: '12px', color: '#166534' }}>${(Number(item.precio) * Number(item.cantidad)).toFixed(2)}</span>
+                  <button onClick={() => eliminarProducto(index)} className="text-right" style={{ width: '40px', fontSize: '11px', color: '#dc2626' }}>Borrar</button>
+                </div>
               ))}
-            </ul>
-
-            <p className="mb-3 font-bold text-center text-base total-highlight">
-              Total Pedido: ${calcularTotal().toFixed(2)}
-            </p>
-
-            {/* Comentarios - Justo antes de enviar */}
-            <div className="mb-4">
-              <label className="block mb-1 font-semibold text-sm" style={{ color: '#000000' }}>Comentarios / Notas:</label>
-              <textarea
-                value={comentarios}
-                onChange={e => setComentarios(e.target.value)}
-                placeholder="Instrucciones especiales, notas de entrega..."
-                rows={2}
-                className="w-full px-3 py-2 border rounded-lg text-sm"
-                style={{ backgroundColor: '#ffffff', borderColor: '#d1d5db' }}
-              />
             </div>
 
-            <div className="text-center">
-              <button
-                onClick={() => {
-                  if (window.confirm("¿Estás seguro de enviar este pedido?")) {
-                    enviarPedido();
-                  }
-                }}
-                disabled={enviandoPedido}
-                className="px-6 py-3 text-white rounded-full hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-md transition-all"
-                style={{ backgroundColor: '#16a34a' }}
-              >
-                {enviandoPedido ? "Enviando..." : "✓ Enviar Pedido"}
-              </button>
+            <div className="pt-3 mt-2 text-center" style={{ borderTop: '2px solid #D4A017' }}>
+              <p className="font-bold text-lg mb-3">Total Pedido: ${calcularTotal().toFixed(2)}</p>
+              <div className="mb-3 text-left">
+                <label className="block text-sm font-medium mb-1">Comentarios / Notas:</label>
+                <textarea value={comentarios} onChange={e => setComentarios(e.target.value)} placeholder="Instrucciones especiales, notas de entrega..." rows={2} className="w-full px-3 py-2 border rounded text-sm" style={{ backgroundColor: '#fff', fontSize: '16px' }} />
+              </div>
+              <button onClick={() => { if (window.confirm("¿Enviar pedido?")) enviarPedido(); }} disabled={enviandoPedido} className="py-3 px-8 rounded-full font-bold text-sm disabled:opacity-50" style={{ backgroundColor: '#16a34a', color: '#ffffff' }}>{enviandoPedido ? "Enviando..." : "✓ Enviar Pedido"}</button>
             </div>
           </div>
         ) : (
-          <div ref={resumenRef} className="text-center text-sm p-4 rounded-lg" style={{ backgroundColor: '#f8fafc', color: '#000000' }}>
-            Agrega productos para ver el resumen del pedido
+          <div ref={resumenRef} className="text-center text-sm p-3 rounded-lg" style={{ backgroundColor: '#f8fafc', color: '#000000', maxWidth: '450px', margin: '0 auto' }}>
+            Agrega productos para ver el resumen
           </div>
         )}
       </div>
