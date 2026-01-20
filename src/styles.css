@@ -1,0 +1,228 @@
+/* src/styles.css
+   Reglas que emulan la apariencia y layout de las capturas.
+   Sobrescribe utilidades tipo "flex", "min-h-screen", "p-4" usadas en tu JSX.
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+
+:root{
+  --bg:#f3f4f6;
+  --card:#ffffff;
+  --muted:#6b7280;
+  --primary:#2563eb;
+  --success:#059669;
+  --danger:#ef4444;
+  --shadow: 0 8px 30px rgba(15,23,42,0.06);
+  --radius:10px;
+  --container-max:880px;
+}
+
+/* Reset básico */
+*{box-sizing:border-box}
+html,body,#root{height:100%}
+body{
+  margin:0;
+  font-family: "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background:var(--bg);
+  color:#111827;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  font-size:14px;
+  line-height:1.4;
+}
+
+/* Sobrescribir utilidades tailwind minimalmente que tu JSX usa */
+.min-h-screen { min-height: 100vh !important; }
+.p-4 { padding: 16px !important; }
+.flex { display:flex !important; }
+.flex-col { flex-direction: column !important; }
+.justify-center { justify-content: center !important; }
+.items-center { align-items: center !important; }
+.bg-white { background: var(--card) !important; }
+.text-center { text-align:center !important; }
+
+/* Contenedor principal - centra el contenido y fija ancho máximo */
+.app-shell {
+  width:100%;
+  display:flex;
+  justify-content:center;
+  padding:28px 16px;
+}
+
+/* Card principal (reemplaza el widescreen sin cambiar JSX) */
+.bg-white.p-6.rounded-lg.shadow-md.w-full.max-w-2xl,
+.bg-white.p-6.rounded.shadow-md.w-full.max-w-sm,
+.bg-white.p-6.rounded-lg.shadow-md.w-full.max-w-2xl {
+  max-width: var(--container-max);
+  width: 100%;
+  padding: 22px !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow) !important;
+  border: 1px solid rgba(0,0,0,0.03);
+}
+
+/* Ajustes para el header: título y logo a la derecha */
+.header-row {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-bottom:14px;
+}
+.header-row h2 { margin:0; font-size:20px; letter-spacing:0.3px; font-weight:700; text-transform:none; }
+.header-row p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+
+/* Logo a la derecha */
+.header-logo {
+  width:84px;
+  height:84px;
+  border-radius:50%;
+  overflow:hidden;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  border: 6px solid #fff;
+}
+.header-logo img { width:100%; height:100%; object-fit:cover; display:block; }
+
+/* Formularios, labels e inputs */
+label.block { display:block; font-weight:600; margin-bottom:6px; color:#111827; }
+.w-full { width:100% !important; }
+input[type="number"], input[type="password"], textarea, select {
+  width:100%;
+  padding:10px 14px;
+  border-radius:8px;
+  border:1px solid #e5e7eb;
+  background:#fff;
+  font-size:14px;
+  color:#111827;
+  outline: none;
+}
+textarea { min-height:86px; resize:vertical; }
+
+/* Botones */
+button {
+  font-weight:600;
+  border:0;
+  cursor:pointer;
+  border-radius:8px;
+  padding:10px 14px;
+}
+button:disabled { opacity:0.7; cursor:default; }
+.btn-validate {
+  background:var(--primary);
+  color:#fff;
+}
+.btn-add { background:#2563eb; color:#fff; }
+
+/* Select react-select container (básico) */
+.select-container .react-select__control {
+  min-height:44px;
+  border-radius:8px;
+  border:1px solid #e5e7eb;
+  background:#fff;
+}
+.select-container .react-select__value-container { padding:6px 10px; }
+
+/* Resumen y líneas finas */
+.border { border:1px solid #e6e6e6 !important; }
+.rounded { border-radius:8px !important; }
+.bg-gray-50 { background:#fafafa !important; }
+
+/* Lista de resumen */
+.summary-list { margin-top:10px; background:#fafafa; padding:10px; border-radius:8px; border:1px solid #f1f5f9; }
+.summary-list .item { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 6px; border-bottom:1px solid #f1f5f9; }
+.summary-list .item:last-child { border-bottom:none; }
+
+/* Footer small */
+.text-xs { font-size:12px; color:var(--muted); }
+
+/* Ajustes responsive para pantallas pequeñas */
+@media (max-width:760px) {
+  :root { --container-max: 420px; }
+  .header-row { flex-direction: column; align-items:flex-start; gap:10px; }
+  .header-logo { width:68px; height:68px; align-self:flex-end; }
+}
+/* ============================
+   Ajustes del RESUMEN DEL PEDIDO
+   ============================ */
+
+/* Números en negrita dentro del resumen */
+.summary-list .item div,
+.summary-list .item span,
+.summary-list .item strong {
+  font-weight: 700 !important;
+}
+
+/* Evitar que los nombres de producto también queden muy pesados */
+.summary-list .item .product-name {
+  font-weight: 500 !important;
+}
+
+/* Botón BORRAR — rojo fuerte, más visible */
+.summary-list .item button,
+.text-red-600 {
+  color: #d50000 !important; /* rojo intenso */
+  font-weight: 700 !important;
+  text-decoration: none !important;
+}
+
+.summary-list .item button:hover {
+  text-decoration: underline !important;
+  color: #9b0000 !important; /* rojo más oscuro al pasar el mouse */
+}
+/* ========= Ajustes finales: ancho, centrado y legibilidad del resumen ========= */
+
+/* Contenedor principal más estrecho */
+:root { --container-max: 640px !important; }
+
+/* Asegurar centrado vertical y horizontal en pantallas grandes */
+.min-h-screen.flex,
+.flex.flex-col.justify-center.items-center.min-h-screen {
+  min-height:100vh !important;
+  display:flex !important;
+  justify-content:center !important;
+  align-items:center !important;
+  padding:28px;
+}
+
+/* Forzar ancho y centrado de la card principal */
+.bg-white.p-6.rounded-lg.shadow-md.w-full.max-w-2xl,
+.bg-white.p-6.rounded.shadow-md.w-full.max-w-sm {
+  max-width: var(--container-max) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* Login card pequeño y centrado */
+.bg-white.p-6.rounded.shadow-md.w-full.max-w-sm,
+.bg-white.p-6.rounded.shadow-md.w-full.max-w-sm.text-center {
+  max-width: 360px !important;
+  margin: 0 auto !important;
+}
+
+/* Resumen: texto negro y más legible */
+.summary-list,
+.summary-list .item,
+.summary-list .item div,
+.summary-list .item span,
+.summary-list .item strong {
+  color: #000000 !important;   /* texto negro en todo el resumen */
+  font-weight: 700 !important; /* números en negrita */
+}
+
+/* Evitar que el nombre del producto esté excesivamente en negrita (menos peso) */
+.summary-list .item .product-name { font-weight:600 !important; color: #111 !important; }
+
+/* Botón borrar rojo (ya aplicado), asegurar tamaño pequeño */
+.summary-list .item button,
+.text-red-600 {
+  color: #d50000 !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+}
+
+/* TOTAL general destacado: más grande y en verde oscuro */
+.total-highlight {
+  font-size: 20px !important;
+  font-weight: 900 !important;
+  color: #047857 !important; /* verde oscuro */
+}

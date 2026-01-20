@@ -12,9 +12,13 @@
   },
   "dependencies": {
     "cors-anywhere": "^0.4.4",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-select": "^5.10.2"
+    "react-select": "^5.10.2",
+    "recharts": "^3.6.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.17",
