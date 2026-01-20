@@ -378,6 +378,18 @@ function PedidoAppRG() {
   const [mensajeExito, setMensajeExito] = useState("");
   const [mensajeGracia, setMensajeGracia] = useState("");
   const [enviandoPedido, setEnviandoPedido] = useState(false);
+  const [confirmarModal, setConfirmarModal] = useState(null); // { mensaje, onConfirm }
+
+  // Función para mostrar confirmación personalizada
+  const mostrarConfirmacion = (mensaje) => {
+    return new Promise((resolve) => {
+      setConfirmarModal({
+        mensaje,
+        onConfirm: () => { setConfirmarModal(null); resolve(true); },
+        onCancel: () => { setConfirmarModal(null); resolve(false); }
+      });
+    });
+  };
   
   // Estados de logos
   const [logoEmpresaUrl, setLogoEmpresaUrl] = useState("");
@@ -936,6 +948,37 @@ function PedidoAppRG() {
         </div>
       )}
 
+      {/* Modal de confirmación personalizado */}
+      {confirmarModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="rounded-2xl p-6 shadow-2xl max-w-sm text-center mx-4 border-2" style={{ backgroundColor: '#ffffff', borderColor: '#D4A017' }}>
+            <div className="flex justify-center mb-4">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: '#fef3c7' }}>
+                <span className="text-3xl">❓</span>
+              </div>
+            </div>
+            <h3 className="text-lg font-bold mb-2" style={{ color: '#1e293b' }}>Confirmar</h3>
+            <p className="text-sm mb-5" style={{ color: '#000000' }}>{confirmarModal.mensaje}</p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={confirmarModal.onCancel}
+                className="px-5 py-2 rounded-lg font-bold text-sm border-2"
+                style={{ borderColor: '#d1d5db', color: '#374151', backgroundColor: '#f9fafb' }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarModal.onConfirm}
+                className="px-5 py-2 rounded-lg font-bold text-sm text-white"
+                style={{ backgroundColor: '#16a34a' }}
+              >
+                Sí, confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de enviando pedido */}
       {enviandoPedido && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -1137,6 +1180,7 @@ function PedidoAppRG() {
                         min="1"
                         value={cantidadSeleccionada}
                         onChange={e => setCantidadSeleccionada(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') agregarProducto(); }}
                         className="px-2 py-2 border rounded text-center"
                         placeholder="0"
                         style={{ backgroundColor: '#fff', fontSize: '12px', width: '60px' }}
@@ -1158,34 +1202,35 @@ function PedidoAppRG() {
 
         {/* Resumen del Pedido */}
         {pedidoItems.length > 0 ? (
-          <div ref={resumenRef} className="border-2 rounded-lg p-3" style={{ backgroundColor: '#fffbeb', borderColor: '#D4A017', maxWidth: '450px', margin: '0 auto' }}>
+          <div ref={resumenRef} className="border-2 rounded-lg p-3 w-full" style={{ backgroundColor: '#fffbeb', borderColor: '#D4A017' }}>
             <h4 className="font-bold text-base mb-2 text-center">Resumen del Pedido ({pedidoItems.length})</h4>
             
             {/* Encabezados */}
             <div className="flex items-center py-1 border-b text-xs font-bold" style={{ borderColor: '#D4A017', color: '#666' }}>
               <span className="flex-1">Producto</span>
-              <span className="text-center" style={{ width: '45px' }}>Cant.</span>
-              <span className="text-right" style={{ width: '55px' }}>Total</span>
-              <span className="text-right" style={{ width: '40px' }}></span>
+              <span className="text-center flex-shrink-0" style={{ width: '50px' }}>Cant.</span>
+              <span className="text-right flex-shrink-0" style={{ width: '65px' }}>Total</span>
+              <span className="text-right flex-shrink-0" style={{ width: '45px' }}></span>
             </div>
             
             <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
               {pedidoItems.map((item, index) => (
                 <div key={index} className="flex items-center py-2 border-b" style={{ borderColor: '#e5e7eb' }}>
-                  <div className="flex-1 pr-1" style={{ minWidth: 0 }}>
-                    <div className="font-medium truncate" style={{ fontSize: '12px' }}>{item.label.split(" | ")[0]}</div>
+                  <div className="flex-1 pr-2" style={{ minWidth: 0 }}>
+                    <div className="font-medium" style={{ fontSize: '13px', wordBreak: 'break-word' }}>{item.label.split(" | ")[0]}</div>
                     <div style={{ fontSize: '11px', color: '#666' }}>${Number(item.precio).toFixed(2)} c/u</div>
                   </div>
                   <input
-                    type="number"
-                    min="1"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={item.cantidad}
                     onChange={e => actualizarCantidad(index, parseInt(e.target.value) || 0)}
-                    className="border rounded text-center"
-                    style={{ width: '45px', padding: '2px', fontSize: '13px' }}
+                    className="border rounded text-center flex-shrink-0"
+                    style={{ width: '50px', padding: '4px', fontSize: '14px' }}
                   />
-                  <span className="font-bold text-right" style={{ width: '55px', fontSize: '12px', color: '#166534' }}>${(Number(item.precio) * Number(item.cantidad)).toFixed(2)}</span>
-                  <button onClick={() => eliminarProducto(index)} className="text-right" style={{ width: '40px', fontSize: '11px', color: '#dc2626' }}>Borrar</button>
+                  <span className="font-bold text-right flex-shrink-0" style={{ width: '65px', fontSize: '13px', color: '#166534' }}>${(Number(item.precio) * Number(item.cantidad)).toFixed(2)}</span>
+                  <button onClick={() => eliminarProducto(index)} className="text-right flex-shrink-0" style={{ width: '45px', fontSize: '12px', color: '#dc2626' }}>Borrar</button>
                 </div>
               ))}
             </div>
@@ -1196,11 +1241,11 @@ function PedidoAppRG() {
                 <label className="block text-sm font-medium mb-1">Comentarios / Notas:</label>
                 <textarea value={comentarios} onChange={e => setComentarios(e.target.value)} placeholder="Instrucciones especiales, notas de entrega..." rows={2} className="w-full px-3 py-2 border rounded text-sm" style={{ backgroundColor: '#fff', fontSize: '16px' }} />
               </div>
-              <button onClick={() => { if (window.confirm("¿Enviar pedido?")) enviarPedido(); }} disabled={enviandoPedido} className="py-3 px-8 rounded-full font-bold text-sm disabled:opacity-50" style={{ backgroundColor: '#16a34a', color: '#ffffff' }}>{enviandoPedido ? "Enviando..." : "✓ Enviar Pedido"}</button>
+              <button onClick={async () => { if (await mostrarConfirmacion("¿Enviar pedido?")) enviarPedido(); }} disabled={enviandoPedido} className="py-3 px-8 rounded-full font-bold text-sm disabled:opacity-50" style={{ backgroundColor: '#16a34a', color: '#ffffff' }}>{enviandoPedido ? "Enviando..." : "✓ Enviar Pedido"}</button>
             </div>
           </div>
         ) : (
-          <div ref={resumenRef} className="text-center text-sm p-3 rounded-lg" style={{ backgroundColor: '#f8fafc', color: '#000000', maxWidth: '450px', margin: '0 auto' }}>
+          <div ref={resumenRef} className="text-center text-sm p-3 rounded-lg w-full" style={{ backgroundColor: '#f8fafc', color: '#000000' }}>
             Agrega productos para ver el resumen
           </div>
         )}
