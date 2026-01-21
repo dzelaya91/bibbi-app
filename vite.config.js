@@ -1,19 +1,15 @@
-﻿import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
-  server: {
-    proxy: {
-      "/apps-script": {
-        target: "https://script.google.com",
-        changeOrigin: true,
-        rewrite: (path) =>
-          path.replace(
-            /^\/apps-script/,
-            "/macros/s/AKfycbytT_24yu8rFsD2ugrFoBpK3szlCqU2FfC9XbMAsik08WEsUZztTje2YZU7gh1LeOWiVQ"
-          ),
-      },
-    },
-  },
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        admin: resolve(__dirname, 'public/admin/index.html')
+      }
+    }
+  }
 });
