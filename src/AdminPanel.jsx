@@ -347,7 +347,7 @@ function AdminPanel() {
         <div className="p-8 rounded-2xl shadow-xl w-full max-w-sm text-center border-2" style={{ backgroundColor: COLORS.cardBg, borderColor: COLORS.primary }}>
           <img src="/assets/logo2.png" alt="SMARTDATA" className="mx-auto mb-6" style={{ maxWidth: 180 }} />
           <h1 className="text-2xl font-bold mb-1" style={{ color: COLORS.text }}>Admin Panel</h1>
-          <p className="text-base mb-6" style={{ color: COLORS.textSecondary }}>BiBi APP SaaS</p>
+          <p className="text-base mb-6" style={{ color: COLORS.textSecondary }}>BiBBi APP SaaS</p>
           {error && <div className="mb-4 p-3 rounded-lg text-sm font-semibold" style={{ backgroundColor: COLORS.dangerLight, color: COLORS.danger }}>{error}</div>}
           <input type="text" value={usuario} onChange={e => setUsuario(e.target.value)} placeholder="Usuario" className={inputClass + " mb-3"} style={inputStyle} />
           <div className="relative mb-4">
@@ -371,7 +371,7 @@ function AdminPanel() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <img src="/assets/logo2.png" alt="SMARTDATA" style={{ maxWidth: 120 }} />
-            <div><h1 className="text-xl font-bold" style={{ color: COLORS.text }}>Admin Panel</h1><p className="text-sm" style={{ color: COLORS.textSecondary }}>BiBi APP SaaS</p></div>
+            <div><h1 className="text-xl font-bold" style={{ color: COLORS.text }}>Admin Panel</h1><p className="text-sm" style={{ color: COLORS.textSecondary }}>BiBBi APP SaaS</p></div>
           </div>
           <button onClick={handleLogout} className="text-sm font-bold px-4 py-2 rounded-lg border-2" style={{ borderColor: COLORS.primary, color: COLORS.text, backgroundColor: COLORS.primaryLight }}>Cerrar sesión</button>
         </div>
