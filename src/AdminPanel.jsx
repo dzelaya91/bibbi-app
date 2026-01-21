@@ -529,32 +529,34 @@ function AdminPanel() {
               </div>
             </div>
 
-            {/* Tabla */}
-            <div className="rounded-xl shadow-sm overflow-hidden" style={{ backgroundColor: COLORS.cardBg }}>
-              <table className="w-full"><thead style={{ backgroundColor: COLORS.darkBg }}><tr>
-                <th className="px-4 py-3 text-left text-sm font-bold" style={{ color: COLORS.text }}>Empresa</th>
-                <th className="px-4 py-3 text-center text-sm font-bold" style={{ color: COLORS.text }}>Tipo</th>
-                <th className="px-4 py-3 text-center text-sm font-bold" style={{ color: COLORS.text }}>Estado</th>
-                <th className="px-4 py-3 text-center text-sm font-bold" style={{ color: COLORS.text }}>Vencimiento</th>
-                <th className="px-4 py-3 text-center text-sm font-bold" style={{ color: COLORS.text }}>Ingreso</th>
-                <th className="px-4 py-3 text-center text-sm font-bold" style={{ color: COLORS.text }}>Activa</th>
-                <th className="px-4 py-3 text-right text-sm font-bold" style={{ color: COLORS.text }}>Acciones</th>
-              </tr></thead><tbody>
-                {empresasFiltradas.length === 0 ? (<tr><td colSpan="7" className="px-4 py-8 text-center" style={{ color: COLORS.textSecondary }}>Sin resultados</td></tr>) : empresasFiltradas.map((e) => {
-                  const es = getEstadoStyle(e.estadoPago);
-                  const ts = getTipoStyle(e.tipoCliente);
-                  const ing = metrics?.empresasConVendedores?.find(m => m.empresa_id === e.empresa_id)?.ingresoEstimado || 0;
-                  return (<tr key={e.empresa_id} className="border-b hover:bg-gray-50" style={{ borderColor: COLORS.border }}>
-                    <td className="px-4 py-4"><div className="font-bold" style={{ color: COLORS.text }}>{e.nombre}</div><div className="text-xs" style={{ color: COLORS.textSecondary }}>{e.empresa_id}</div></td>
-                    <td className="px-4 py-4 text-center"><span className="px-2 py-1 text-xs font-bold rounded-full" style={{ backgroundColor: ts.bg, color: ts.text }}>{e.tipoCliente || "REGULAR"}</span></td>
-                    <td className="px-4 py-4 text-center"><span className="px-2 py-1 text-xs font-bold rounded-full" style={{ backgroundColor: es.bg, color: es.text }}>{es.label}</span></td>
-                    <td className="px-4 py-4 text-center" style={{ color: COLORS.text }}>{e.fechaVencimiento ? new Date(e.fechaVencimiento).toLocaleDateString() : "-"}{e.diasRestantes >= 0 && e.diasRestantes <= 15 && <span className="ml-1 text-xs font-bold" style={{ color: COLORS.warning }}>({e.diasRestantes}d)</span>}</td>
-                    <td className="px-4 py-4 text-center font-bold" style={{ color: e.activa ? COLORS.primary : COLORS.textSecondary }}>{formatCurrency(ing)}</td>
-                    <td className="px-4 py-4 text-center">{empresaCargando === e.empresa_id ? <Spinner size="sm" /> : <button onClick={() => toggleActivaEmpresa(e)} className="relative w-12 h-6 rounded-full" style={{ backgroundColor: e.activa ? COLORS.primary : COLORS.border }}><span className="absolute top-1 w-4 h-4 bg-white rounded-full shadow" style={{ left: e.activa ? '28px' : '4px' }}></span></button>}</td>
-                    <td className="px-4 py-4 text-right"><div className="flex justify-end gap-2"><button onClick={() => abrirEditarEmpresa(e)} className="text-sm font-bold px-2 py-1 rounded hover:bg-gray-100" style={{ color: COLORS.accent }}>Editar</button><button onClick={() => abrirTokensEmpresa(e)} className="text-sm font-bold px-2 py-1 rounded" style={{ color: COLORS.text, backgroundColor: COLORS.primaryLight }}>Tokens</button></div></td>
-                  </tr>);
-                })}
-              </tbody><tfoot><tr style={{ backgroundColor: COLORS.primaryLight }}><td colSpan="4" className="px-4 py-3 text-right font-bold" style={{ color: COLORS.text }}>Total ({empresasFiltradas.length}):</td><td className="px-4 py-3 text-center font-bold text-lg" style={{ color: COLORS.primary }}>{formatCurrency(totalIngresosFiltrados)}</td><td colSpan="2"></td></tr></tfoot></table>
+            {/* Tabla con scroll horizontal */}
+            <div className="rounded-xl shadow-sm" style={{ backgroundColor: COLORS.cardBg }}>
+              <div className="overflow-x-auto">
+                <table className="w-full"><thead style={{ backgroundColor: COLORS.darkBg }}><tr>
+                  <th className="px-4 py-3 text-left text-sm font-bold whitespace-nowrap" style={{ color: COLORS.text }}>Empresa</th>
+                  <th className="px-4 py-3 text-center text-sm font-bold whitespace-nowrap" style={{ color: COLORS.text }}>Tipo</th>
+                  <th className="px-4 py-3 text-center text-sm font-bold whitespace-nowrap" style={{ color: COLORS.text }}>Estado</th>
+                  <th className="px-4 py-3 text-center text-sm font-bold whitespace-nowrap" style={{ color: COLORS.text }}>Vencimiento</th>
+                  <th className="px-4 py-3 text-center text-sm font-bold whitespace-nowrap" style={{ color: COLORS.text }}>Ingreso</th>
+                  <th className="px-4 py-3 text-center text-sm font-bold whitespace-nowrap" style={{ color: COLORS.text }}>Activa</th>
+                  <th className="px-4 py-3 text-right text-sm font-bold whitespace-nowrap" style={{ color: COLORS.text }}>Acciones</th>
+                </tr></thead><tbody>
+                  {empresasFiltradas.length === 0 ? (<tr><td colSpan="7" className="px-4 py-8 text-center" style={{ color: COLORS.textSecondary }}>Sin resultados</td></tr>) : empresasFiltradas.map((e) => {
+                    const es = getEstadoStyle(e.estadoPago);
+                    const ts = getTipoStyle(e.tipoCliente);
+                    const ing = metrics?.empresasConVendedores?.find(m => m.empresa_id === e.empresa_id)?.ingresoEstimado || 0;
+                    return (<tr key={e.empresa_id} className="border-b hover:bg-gray-50" style={{ borderColor: COLORS.border }}>
+                      <td className="px-4 py-4 whitespace-nowrap"><div className="font-bold" style={{ color: COLORS.text }}>{e.nombre}</div><div className="text-xs" style={{ color: COLORS.textSecondary }}>{e.empresa_id}</div></td>
+                      <td className="px-4 py-4 text-center whitespace-nowrap"><span className="px-2 py-1 text-xs font-bold rounded-full" style={{ backgroundColor: ts.bg, color: ts.text }}>{e.tipoCliente || "REGULAR"}</span></td>
+                      <td className="px-4 py-4 text-center whitespace-nowrap"><span className="px-2 py-1 text-xs font-bold rounded-full" style={{ backgroundColor: es.bg, color: es.text }}>{es.label}</span></td>
+                      <td className="px-4 py-4 text-center whitespace-nowrap" style={{ color: COLORS.text }}>{e.fechaVencimiento ? new Date(e.fechaVencimiento).toLocaleDateString() : "-"}{e.diasRestantes >= 0 && e.diasRestantes <= 15 && <span className="ml-1 text-xs font-bold" style={{ color: COLORS.warning }}>({e.diasRestantes}d)</span>}</td>
+                      <td className="px-4 py-4 text-center font-bold whitespace-nowrap" style={{ color: e.activa ? COLORS.primary : COLORS.textSecondary }}>{formatCurrency(ing)}</td>
+                      <td className="px-4 py-4 text-center whitespace-nowrap">{empresaCargando === e.empresa_id ? <Spinner size="sm" /> : <button onClick={() => toggleActivaEmpresa(e)} className="relative w-12 h-6 rounded-full" style={{ backgroundColor: e.activa ? COLORS.primary : COLORS.border }}><span className="absolute top-1 w-4 h-4 bg-white rounded-full shadow" style={{ left: e.activa ? '28px' : '4px' }}></span></button>}</td>
+                      <td className="px-4 py-4 text-right whitespace-nowrap"><div className="flex justify-end gap-2"><button onClick={() => abrirEditarEmpresa(e)} className="text-sm font-bold px-2 py-1 rounded hover:bg-gray-100" style={{ color: COLORS.accent }}>Editar</button><button onClick={() => abrirTokensEmpresa(e)} className="text-sm font-bold px-2 py-1 rounded" style={{ color: COLORS.text, backgroundColor: COLORS.primaryLight }}>Tokens</button></div></td>
+                    </tr>);
+                  })}
+                </tbody><tfoot><tr style={{ backgroundColor: COLORS.primaryLight }}><td colSpan="4" className="px-4 py-3 text-right font-bold" style={{ color: COLORS.text }}>Total ({empresasFiltradas.length}):</td><td className="px-4 py-3 text-center font-bold text-lg" style={{ color: COLORS.primary }}>{formatCurrency(totalIngresosFiltrados)}</td><td colSpan="2"></td></tr></tfoot></table>
+              </div>
             </div>
           </div>
         )}
