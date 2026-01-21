@@ -4,8 +4,7 @@ import './index.css';
 import PedidoAppRG from './src/PedidoAppRG.jsx';
 import AdminPanel from './src/AdminPanel.jsx';
 
-// Detectar si estamos en /admin
-const isAdmin = window.location.pathname === '/admin' || window.location.pathname === '/admin/';
+const isAdmin = window.FORCE_ADMIN || window.location.pathname.includes('/admin');
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
